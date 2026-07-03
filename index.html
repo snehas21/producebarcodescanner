@@ -76,6 +76,17 @@
       min-height: 0;
     }
 
+    /* html5-qrcode injects a <video>/<canvas> here at runtime; force it to
+       stay inside the container instead of overflowing on narrow phones. */
+    #reader video,
+    #reader canvas,
+    #reader img {
+      max-width: 100% !important;
+      width: 100% !important;
+      height: auto !important;
+      border-radius: 14px;
+    }
+
     .scan-controls {
       display: flex;
       gap: 10px;

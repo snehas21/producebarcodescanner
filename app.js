@@ -32,6 +32,35 @@
     ];
   }
 
+  // Sized from the actual camera viewfinder at runtime instead of fixed
+  // pixels, so it never overflows a narrow phone screen in portrait mode.
+  function qrboxFunction(viewfinderWidth, viewfinderHeight) {
+    const width = Math.max(180, Math.floor(Math.min(viewfinderWidth * 0.85, 320)));
+    const height = Math.max(100, Math.floor(Math.min(viewfinderHeight * 0.45, 180)));
+    return { width, height };
+  }
+
+  function cameraErrorMessage(err) {
+    // html5-qrcode wraps the original DOMException in a new Error, so the
+    // useful "NotAllowedError"/"NotFoundError" name only survives inside the
+    // message text - match on that instead of err.name.
+    const text = ((err && err.name) || "") + " " + ((err && err.message) || String(err));
+    if (/NotAllowedError|PermissionDeniedError/.test(text)) {
+      return "Camera permission was denied. In Chrome, tap the lock/info icon in the " +
+        "address bar → Permissions → Camera → Allow, then reload the page.";
+    }
+    if (/NotFoundError|DevicesNotFoundError/.test(text)) {
+      return "No camera was found on this device.";
+    }
+    if (/NotReadableError|TrackStartError/.test(text)) {
+      return "The camera is already in use by another app. Close it and try again.";
+    }
+    if (location.protocol !== "https:" && location.hostname !== "localhost") {
+      return "Camera access needs HTTPS. Open this page over https:// (or localhost) to use the camera.";
+    }
+    return "Couldn't start the camera (" + (err && err.message ? err.message : err) + ").";
+  }
+
   async function startScanning() {
     if (scanning) return;
     els.scanStatus.textContent = "Starting camera...";
@@ -45,7 +74,7 @@
 
       await html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 260, height: 160 } },
+        { fps: 10, qrbox: qrboxFunction },
         onScanSuccess,
         () => {} // ignore the constant per-frame "not found" callback
       );
@@ -55,9 +84,7 @@
       els.stopBtn.hidden = false;
     } catch (err) {
       console.error(err);
-      els.scanStatus.textContent =
-        "Couldn't start the camera (" + (err && err.message ? err.message : err) +
-        "). You can still type a code below.";
+      els.scanStatus.textContent = cameraErrorMessage(err) + " You can still type a code below.";
       els.startBtn.disabled = false;
     }
   }
@@ -376,6 +403,15 @@
   els.clearHistoryBtn.addEventListener("click", () => {
     saveHistory([]);
     renderHistory();
+  });
+
+  // Release the camera when the tab is backgrounded or closed, so it
+  // doesn't keep running (and draining battery) on a phone.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && scanning) stopScanning();
+  });
+  window.addEventListener("pagehide", () => {
+    if (scanning) stopScanning();
   });
 
   renderHistory();
