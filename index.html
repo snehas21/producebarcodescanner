@@ -455,7 +455,7 @@
         <button id="startBtn" class="btn-primary">Start camera</button>
         <button id="stopBtn" class="btn-secondary" hidden>Stop</button>
       </div>
-      <p id="scanStatus">Tap "Start camera" and point it at a striped barcode on packaging. (Loose-produce PLU stickers usually aren't scannable - see below.)</p>
+      <p id="scanStatus">Tap "Start camera" and point it at a striped barcode. Fruit stickers are often creased/curved and hard to scan - typing the PLU number below is usually faster.</p>
     </section>
 
     <section class="card-panel">
@@ -464,9 +464,10 @@
         <input type="text" id="manualInput" placeholder="e.g. 4131, 3283, or type &quot;gala&quot;" inputmode="text" autocomplete="off" />
         <button id="lookupBtn" class="btn-primary">Look up</button>
       </div>
-      <p class="hint">PLU stickers on loose produce (like the one on a banana or apple) are just printed
-      digits, not an actual barcode - the camera can't read them, so type the 4-5 digit number in here
-      instead. Packaged items use a longer 8-14 digit barcode the camera can scan.</p>
+      <p class="hint">Loose-produce stickers (banana, apple, etc.) show a 4-5 digit PLU number - some
+      have a real barcode too, but it's often creased or curved around the fruit and won't scan
+      reliably even with a good camera, so typing the number here is usually faster. Packaged items
+      use a longer 8-14 digit barcode the camera can scan normally.</p>
       <div id="searchResults"></div>
     </section>
 
