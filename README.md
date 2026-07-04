@@ -21,7 +21,14 @@ grocery shopping in mind.
 - **Barcode lookup**: for packaged items (e.g. a bag of apples with a real
   UPC/EAN barcode), the app queries the free, crowd-sourced
   [Open Food Facts](https://world.openfoodfacts.org/) API for product name,
-  brand, quantity, and ingredients.
+  brand, quantity, ingredients, nutrition (kcal/sugar/fibre per 100g), and any
+  notable certifications on file (organic, fair trade, Non-GMO Project
+  Verified, etc.).
+- **Pesticide-residue context**: PLU entries can be tagged with EWG's 2026
+  "Dirty Dozen" / "Clean Fifteen" Shopper's Guide to Pesticides - a published,
+  commodity-level ranking of which conventionally-grown produce types most/
+  least often test positive for residue in US sampling. Shown as a reference
+  note, not a lab result for the specific item scanned.
 - **Search by name**: type a produce name (e.g. "honeycrisp") to find its PLU
   code without scanning.
 - **Scan history**: recent lookups are kept in `localStorage` for quick
