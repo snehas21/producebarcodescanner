@@ -204,11 +204,14 @@
     }
 
     const catLine = info.category ? escapeHtml(info.category) + " &middot; " : "";
+    const badgeClass =
+      info.label === "Organic" ? " badge-organic" :
+      /^Bioengineered/.test(info.label) ? " badge-legacy" : "";
     els.result.innerHTML =
       '<div class="card' + (info.found ? "" : " unknown") + '">' +
       '<div class="card-emoji">' + info.emoji + "</div>" +
       "<h3>" + escapeHtml(info.name) + "</h3>" +
-      '<div class="badges"><span class="badge">' + escapeHtml(info.label) + "</span>" +
+      '<div class="badges"><span class="badge' + badgeClass + '">' + escapeHtml(info.label) + "</span>" +
       '<span class="badge code">PLU ' + escapeHtml(code) + "</span></div>" +
       "<p>" + catLine + escapeHtml(info.note) + "</p>" +
       (info.tip ? '<p class="tip">\u{1F4A1} ' + escapeHtml(info.tip) + "</p>" : "") +
