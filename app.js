@@ -24,9 +24,10 @@
   let noScanHintTimer = null;
 
   const NO_SCAN_HINT =
-    "Still nothing? Most loose-produce stickers (like the one on a banana or apple) only have " +
-    "printed digits - there's no actual barcode there for the camera to read. Type the number into " +
-    "the box below instead. The camera is really only useful for real striped barcodes on packaging.";
+    "Still nothing? Fruit stickers are hard to scan even when they do have a real barcode - the " +
+    "sticker is often creased or curved around the produce, which bends the bars enough that no " +
+    "scanner (including in-store ones) can read it. It's usually faster to just type the printed " +
+    "number into the box below.";
 
   // ---------- Scanning ----------
 
