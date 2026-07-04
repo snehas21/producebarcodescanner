@@ -307,6 +307,22 @@
       color: var(--leaf);
     }
 
+    .card .note {
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+    }
+
+    .card .note-dirty {
+      background: var(--legacy-bg);
+      color: var(--legacy-text);
+    }
+
+    .card .note-clean {
+      background: var(--organic-bg);
+      color: var(--organic-text);
+    }
+
     .card a {
       color: var(--link);
     }
@@ -439,7 +455,7 @@
         <button id="startBtn" class="btn-primary">Start camera</button>
         <button id="stopBtn" class="btn-secondary" hidden>Stop</button>
       </div>
-      <p id="scanStatus">Tap "Start camera" and point it at a barcode or PLU sticker.</p>
+      <p id="scanStatus">Tap "Start camera" and point it at a striped barcode on packaging. (Loose-produce PLU stickers usually aren't scannable - see below.)</p>
     </section>
 
     <section class="card-panel">
@@ -448,7 +464,9 @@
         <input type="text" id="manualInput" placeholder="e.g. 4131, 3283, or type &quot;gala&quot;" inputmode="text" autocomplete="off" />
         <button id="lookupBtn" class="btn-primary">Look up</button>
       </div>
-      <p class="hint">PLU stickers on loose produce are 4-5 digit numbers (not always a scannable barcode) - type them in directly. Packaged items use a longer 8-14 digit barcode.</p>
+      <p class="hint">PLU stickers on loose produce (like the one on a banana or apple) are just printed
+      digits, not an actual barcode - the camera can't read them, so type the 4-5 digit number in here
+      instead. Packaged items use a longer 8-14 digit barcode the camera can scan.</p>
       <div id="searchResults"></div>
     </section>
 

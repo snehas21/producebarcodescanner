@@ -21,6 +21,12 @@
   let html5QrCode = null;
   let scanning = false;
   let lastScanAt = 0;
+  let noScanHintTimer = null;
+
+  const NO_SCAN_HINT =
+    "Still nothing? Most loose-produce stickers (like the one on a banana or apple) only have " +
+    "printed digits - there's no actual barcode there for the camera to read. Type the number into " +
+    "the box below instead. The camera is really only useful for real striped barcodes on packaging.";
 
   // ---------- Scanning ----------
 
@@ -80,8 +86,9 @@
       );
 
       scanning = true;
-      els.scanStatus.textContent = "Point the camera at a barcode or PLU sticker.";
+      els.scanStatus.textContent = "Point the camera at a striped barcode on packaging.";
       els.stopBtn.hidden = false;
+      armNoScanHint();
     } catch (err) {
       console.error(err);
       els.scanStatus.textContent = cameraErrorMessage(err) + " You can still type a code below.";
@@ -89,8 +96,16 @@
     }
   }
 
+  function armNoScanHint() {
+    clearTimeout(noScanHintTimer);
+    noScanHintTimer = setTimeout(() => {
+      if (scanning) els.scanStatus.textContent = NO_SCAN_HINT;
+    }, 8000);
+  }
+
   async function stopScanning() {
     if (!scanning || !html5QrCode) return;
+    clearTimeout(noScanHintTimer);
     try {
       await html5QrCode.stop();
       await html5QrCode.clear();
@@ -107,6 +122,8 @@
     const now = Date.now();
     if (now - lastScanAt < 1500) return; // debounce repeated frames
     lastScanAt = now;
+    els.scanStatus.textContent = "Point the camera at a striped barcode on packaging.";
+    armNoScanHint(); // re-arm in case the next thing they scan is a bare PLU sticker
     els.manualInput.value = decodedText;
     handleCode(decodedText);
   }
@@ -126,6 +143,21 @@
     return { type: "unknown", code: digits };
   }
 
+  // EWG's 2026 Shopper's Guide to Pesticides ("Dirty Dozen" / "Clean
+  // Fifteen") - a commodity-level guideline from US produce testing, not a
+  // lab result for the specific item scanned. See PLU_DATABASE's `ewg` field.
+  function pesticideNote(ewg, isOrganic) {
+    if (!ewg) return null;
+    if (isOrganic) {
+      return ewg === "dirty"
+        ? { tone: "dirty", text: "This commodity is on EWG's 2026 “Dirty Dozen” - among conventionally-grown produce it's one of the most likely to test positive for pesticide residue in US sampling, which is presumably part of why you might be buying the organic version." }
+        : { tone: "clean", text: "This commodity is on EWG's 2026 “Clean Fifteen” - even conventionally-grown, it typically tests with little to no detectable pesticide residue." };
+    }
+    return ewg === "dirty"
+      ? { tone: "dirty", text: "Heads up: this commodity is on EWG's 2026 “Dirty Dozen” - among conventionally-grown produce it's one of the most likely to test positive for pesticide residue in US sampling. Washing helps but doesn't remove everything; the organic version (a 5-digit code starting with 9) is the lower-residue option if that matters to you." }
+      : { tone: "clean", text: "Good news: this commodity is on EWG's 2026 “Clean Fifteen” - even conventionally-grown, it typically tests with little to no detectable pesticide residue." };
+  }
+
   function lookupPLU(code) {
     if (code.length === 5) {
       const prefix = code[0];
@@ -139,8 +171,11 @@
           category: entry ? entry.category : null,
           tip: entry ? entry.tip : null,
           label: "Organic",
-          note: "5-digit code starting with 9 = certified organic. In Canada, look for the " +
+          note: "5-digit code starting with 9 = certified organic. Organic doesn't automatically mean " +
+                "pesticide-free - certified growers may still use certain approved non-synthetic " +
+                "substances - but synthetic pesticides are restricted. In Canada, look for the " +
                 "\"Canada Organic\" logo on packaging/signage to confirm certification.",
+          pesticide: entry ? pesticideNote(entry.ewg, true) : null,
         };
       }
       if (prefix === "8") {
@@ -154,6 +189,7 @@
           note: "5-digit code starting with 8 was an optional \"bioengineered\" flag. " +
                 "It was made voluntary industry-wide around 2015 and is rarely used today - " +
                 "its absence does not mean an item isn't genetically modified.",
+          pesticide: entry ? pesticideNote(entry.ewg, false) : null,
         };
       }
     }
@@ -168,6 +204,7 @@
         tip: entry.tip,
         label: "Conventionally grown",
         note: "4-digit PLU code = conventionally grown produce.",
+        pesticide: pesticideNote(entry.ewg, false),
       };
     }
     return null;
@@ -175,7 +212,8 @@
 
   async function lookupUPC(code) {
     const url = "https://world.openfoodfacts.org/api/v2/product/" + encodeURIComponent(code) +
-      ".json?fields=product_name,brands,image_front_small_url,quantity,categories_tags,ingredients_text,countries_tags,nutriscore_grade";
+      ".json?fields=product_name,brands,image_front_small_url,quantity,categories_tags,ingredients_text," +
+      "countries_tags,nutriscore_grade,labels_tags,nutriments";
     const res = await fetch(url);
     if (!res.ok) throw new Error("Network error (" + res.status + ")");
     const data = await res.json();
@@ -207,6 +245,11 @@
     const badgeClass =
       info.label === "Organic" ? " badge-organic" :
       /^Bioengineered/.test(info.label) ? " badge-legacy" : "";
+    const pesticideHtml = info.pesticide
+      ? '<p class="note note-' + info.pesticide.tone + '">' +
+        (info.pesticide.tone === "dirty" ? "\u{1F9EA} " : "\u{2705} ") +
+        escapeHtml(info.pesticide.text) + "</p>"
+      : "";
     els.result.innerHTML =
       '<div class="card' + (info.found ? "" : " unknown") + '">' +
       '<div class="card-emoji">' + info.emoji + "</div>" +
@@ -215,6 +258,7 @@
       '<span class="badge code">PLU ' + escapeHtml(code) + "</span></div>" +
       "<p>" + catLine + escapeHtml(info.note) + "</p>" +
       (info.tip ? '<p class="tip">\u{1F4A1} ' + escapeHtml(info.tip) + "</p>" : "") +
+      pesticideHtml +
       "</div>";
     addHistory(code, "PLU", info.name);
   }
@@ -246,16 +290,35 @@
       ? product.nutriscore_grade.toUpperCase()
       : null;
 
+    // Surface any notable certifications OFF has on file (this is real,
+    // per-product data when present - e.g. a packaged item can be
+    // independently certified organic even though PLU-style codes don't
+    // apply to packaged/branded products).
+    const notableLabels = { organic: "Organic", "fair-trade": "Fair Trade", "non-gmo-project-verified": "Non-GMO Project Verified", vegan: "Vegan", vegetarian: "Vegetarian", kosher: "Kosher", halal: "Halal" };
+    const labels = (product.labels_tags || [])
+      .map((t) => t.replace(/^\w+:/, ""))
+      .filter((t) => notableLabels[t])
+      .map((t) => notableLabels[t]);
+
+    const n = product.nutriments || {};
+    const nutritionBits = [];
+    if (typeof n["energy-kcal_100g"] === "number") nutritionBits.push(Math.round(n["energy-kcal_100g"]) + " kcal");
+    if (typeof n.sugars_100g === "number") nutritionBits.push(n.sugars_100g + " g sugar");
+    if (typeof n.fiber_100g === "number") nutritionBits.push(n.fiber_100g + " g fibre");
+    const nutritionLine = nutritionBits.length ? nutritionBits.join(", ") + " (per 100g)" : null;
+
     els.result.innerHTML =
       '<div class="card">' +
       (img ? '<img class="card-img" src="' + escapeHtml(img) + '" alt="">' : '<div class="card-emoji">\u{1F4E6}</div>') +
       "<h3>" + escapeHtml(name) + "</h3>" +
       '<div class="badges"><span class="badge code">' + escapeHtml(code) + "</span>" +
       (nutriscore ? '<span class="badge">Nutri-Score ' + escapeHtml(nutriscore) + "</span>" : "") +
+      labels.map((l) => '<span class="badge badge-organic">' + escapeHtml(l) + "</span>").join("") +
       "</div>" +
       (brand ? "<p><strong>Brand:</strong> " + brand + "</p>" : "") +
       (qty ? "<p><strong>Quantity:</strong> " + qty + "</p>" : "") +
       (categories ? "<p><strong>Categories:</strong> " + escapeHtml(categories) + "</p>" : "") +
+      (nutritionLine ? "<p><strong>Nutrition:</strong> " + escapeHtml(nutritionLine) + "</p>" : "") +
       (product.ingredients_text ? "<p><strong>Ingredients:</strong> " + escapeHtml(product.ingredients_text) + "</p>" : "") +
       '<p class="tip">Data from <a href="https://world.openfoodfacts.org/product/' + escapeHtml(code) +
       '" target="_blank" rel="noopener">Open Food Facts</a>, a free crowd-sourced database.</p>' +
