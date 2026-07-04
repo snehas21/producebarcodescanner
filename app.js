@@ -246,6 +246,10 @@
     const badgeClass =
       info.label === "Organic" ? " badge-organic" :
       /^Bioengineered/.test(info.label) ? " badge-legacy" : "";
+    const badgeIcon =
+      info.label === "Organic" ? "\u{1F331} " :
+      /^Bioengineered/.test(info.label) ? "\u{26A0}\u{FE0F} " :
+      info.label === "Conventionally grown" ? "\u{1F69C} " : "";
     const pesticideHtml = info.pesticide
       ? '<p class="note note-' + info.pesticide.tone + '">' +
         (info.pesticide.tone === "dirty" ? "\u{1F9EA} " : "\u{2705} ") +
@@ -255,7 +259,7 @@
       '<div class="card' + (info.found ? "" : " unknown") + '">' +
       '<div class="card-emoji">' + info.emoji + "</div>" +
       "<h3>" + escapeHtml(info.name) + "</h3>" +
-      '<div class="badges"><span class="badge' + badgeClass + '">' + escapeHtml(info.label) + "</span>" +
+      '<div class="badges"><span class="badge' + badgeClass + '">' + badgeIcon + escapeHtml(info.label) + "</span>" +
       '<span class="badge code">PLU ' + escapeHtml(code) + "</span></div>" +
       "<p>" + catLine + escapeHtml(info.note) + "</p>" +
       (info.tip ? '<p class="tip">\u{1F4A1} ' + escapeHtml(info.tip) + "</p>" : "") +
