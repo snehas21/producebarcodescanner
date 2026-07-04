@@ -60,3 +60,4 @@ use a tool like `ngrok`.
 - `index.html` - markup, styles, and the camera reader container
 - `app.js` - scanning, code classification, lookups, and rendering
 - `plu-data.js` - the local PLU reference table
+# produce-barcode-spanner
