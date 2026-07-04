@@ -21,6 +21,12 @@
   let html5QrCode = null;
   let scanning = false;
   let lastScanAt = 0;
+  let noScanHintTimer = null;
+
+  const NO_SCAN_HINT =
+    "Still nothing? Most loose-produce stickers (like the one on a banana or apple) only have " +
+    "printed digits - there's no actual barcode there for the camera to read. Type the number into " +
+    "the box below instead. The camera is really only useful for real striped barcodes on packaging.";
 
   // ---------- Scanning ----------
 
@@ -80,8 +86,9 @@
       );
 
       scanning = true;
-      els.scanStatus.textContent = "Point the camera at a barcode or PLU sticker.";
+      els.scanStatus.textContent = "Point the camera at a striped barcode on packaging.";
       els.stopBtn.hidden = false;
+      armNoScanHint();
     } catch (err) {
       console.error(err);
       els.scanStatus.textContent = cameraErrorMessage(err) + " You can still type a code below.";
@@ -89,8 +96,16 @@
     }
   }
 
+  function armNoScanHint() {
+    clearTimeout(noScanHintTimer);
+    noScanHintTimer = setTimeout(() => {
+      if (scanning) els.scanStatus.textContent = NO_SCAN_HINT;
+    }, 8000);
+  }
+
   async function stopScanning() {
     if (!scanning || !html5QrCode) return;
+    clearTimeout(noScanHintTimer);
     try {
       await html5QrCode.stop();
       await html5QrCode.clear();
@@ -107,6 +122,8 @@
     const now = Date.now();
     if (now - lastScanAt < 1500) return; // debounce repeated frames
     lastScanAt = now;
+    els.scanStatus.textContent = "Point the camera at a striped barcode on packaging.";
+    armNoScanHint(); // re-arm in case the next thing they scan is a bare PLU sticker
     els.manualInput.value = decodedText;
     handleCode(decodedText);
   }
